@@ -52,6 +52,7 @@ class ReadyToRange():
 
 if __name__ == "__main__":
     port = '/dev/ttyACM0'                # COM port of the Pozyx device
+    port = get_serial_ports()[-1][0]
 
     remote_id = 0x605D           # the network ID of the remote device
     remote = False               # whether to use the given remote device for ranging

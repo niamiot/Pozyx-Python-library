@@ -911,7 +911,7 @@ class PozyxLib(PozyxCore):
             list_offset = [list_offset]
         status = []
         for uoff, offset in enumerate(list_offset):
-            buff_tmp = Buffer([0] * 96, size=2, signed=1)
+            buff_tmp = Buffer([0] * 98, size=2, signed=1)
             status.append(self.getDeviceCirData(offset, data_length, buff_tmp,remote_id))
             cir_buffer.fill(uoff * len(buff_tmp.data), buff_tmp.data)
         return sum(status) / len(list_offset)

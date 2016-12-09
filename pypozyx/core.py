@@ -296,6 +296,8 @@ class PozyxCore():
         Returns:
             POZYX_SUCCESS, POZYX_FAILURE, POZYX_TIMEOUT
         """
+
+
         if is_functioncall(address) == 0:
             return POZYX_FAILURE
 

@@ -14,15 +14,14 @@ from pypozyx import *
 from pypozyx.definitions.registers import *
 
 
-port = '/dev/ttyACM1'
+port = get_serial_ports()[-1][0]
 p = PozyxSerial(port)
-
 remote_id = 0x6830           # the network ID of the remote device
 remote = False               # whether to use the given remote device for ranging
 if not remote:
     remote_id = None
 
-destination_id = 0x6830      # network ID of the ranging destination
+destination_id = 0x6065      # network ID of the ranging destination
 range_step_mm = 1000         # distance that separates the amount of LEDs lighting up.
 
 
@@ -45,7 +44,9 @@ if status:
     #       That plots the CIR contains in the buffer.
     #       It still requires post-procesing to
     #       re-align delay and received power level.
-            plt.plot(20*np.log10(abs(cira[:-36])))
+            cira=cira[:-36]
+            ciradb = 20*np.log10(abs(cira))
+            plt.plot(ciradb)
             plt.show()
         except:
             print cir_buffer
@@ -53,3 +54,26 @@ if status:
         print 'error in getting cir'
 else:
     print 'Ranging failed'
+
+
+th = np.mean(ciradb)+3*np.std(ciradb)
+
+uth = np.where(ciradb>th)
+
+dt = device_range.distance/300.
+time_step = 1.0016
+
+
+
+io =  uth - int(round(dt/time_step))
+
+# recal power
+maxcira = abs(cira[io:]).max()
+fGHz = 6.489
+FSPL = 32.4+20*np.log10(fGHz)+20*np.log10(device_range.distance/1000.)
+
+Palpha = pow(10,-FSPL/20.)/(1.*maxcira)
+
+cira = Palpha * cira 
+
+plt.plot(20*np.log10(abs(cira[io:350])))

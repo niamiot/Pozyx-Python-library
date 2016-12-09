@@ -8,7 +8,7 @@ You can find the Arduino tutorial here:
     https://www.pozyx.io/Documentation/Tutorials/ready_to_localize
 """
 from pypozyx import *
-
+import matplotlib.pyplot as plt
 
 class ReadyToLocalize():
     """Continuously calls the Pozyx positioning function and prints its position."""
@@ -28,13 +28,22 @@ class ReadyToLocalize():
         self.setAnchorsManual()
         self.printConfigurationResult()
 
-    def loop(self):
+    def loop(self,fig,ax):
         """Performs positioning and prints the results."""
         position = Coordinates()
         status = self.pozyx.doPositioning(
             position, self.dimension, self.height, self.algorithm, remote_id=self.remote_id)
         if status == POZYX_SUCCESS:
-            self.printCoordinates(position)
+            # self.printCoordinates(position)
+
+            try:
+
+                self.pe[0].set_xdata(position.x)
+                self.pe[0].set_ydata(position.y)
+                plt.draw()
+            except:
+                self.pe = ax.plot(position.x,position.y,'or')
+                plt.draw()
         else:
             self.printErrorCode()
 
@@ -80,23 +89,28 @@ class ReadyToLocalize():
 
 if __name__ == "__main__":
     # shortcut to not have to find out the port yourself
-    port = get_serial_ports()[0].device
+    port = get_serial_ports()[-1][0]
     remote_id = 0x1000                     # remote device network ID
     remote = False                         # whether to use a remote device
     if not remote:
         remote_id = None
     # necessary data for calibration
-    anchors = [DeviceCoordinates(0x0001, 1, Coordinates(0, 0, 2000)),
-               DeviceCoordinates(0x0002, 1, Coordinates(3000, 0, 2000)),
-               DeviceCoordinates(0x0003, 1, Coordinates(0, 3000, 2000)),
-               DeviceCoordinates(0x0004, 1, Coordinates(3000, 3000, 2000))]
+    anchors = [DeviceCoordinates(0x6830, 1, Coordinates(800, 1100, 800)),
+               DeviceCoordinates(0x685F, 1, Coordinates(6000, 1100, 1200)),
+               DeviceCoordinates(0x6065, 1, Coordinates(800, 9000, 800)),
+               DeviceCoordinates(0x685C, 1, Coordinates(6000, 8000, 1500))]
 
     algorithm = POZYX_POS_ALG_UWB_ONLY     # positioning algorithm to use
     dimension = POZYX_3D                   # positioning dimension
-    height = 1000                          # height of device, required in 2.5D positioning
+    height = 800                          # height of device, required in 2.5D positioning
 
     pozyx = PozyxSerial(port)
     r = ReadyToLocalize(pozyx, anchors, algorithm, dimension, remote_id)
     r.setup()
+    fig,ax = plt.subplots(1,1)
+    [ax.plot(a.data[2],a.data[3],'ok') for a in anchors]
+    plt.ion()
+    plt.show()
     while True:
-        r.loop()
+        r.loop(fig,ax)
+        raw_input()
