@@ -12,7 +12,7 @@ from pypozyx.core import PozyxCore
 from pypozyx.structures.generic import Data, SingleRegister, dataCheck, Buffer
 from pypozyx.structures.device import *
 from pypozyx.structures.sensor_data import *
-
+import time
 
 class PozyxLib(PozyxCore):
     """PozyxLib
@@ -882,6 +882,7 @@ class PozyxLib(PozyxCore):
         if not dataCheck(device_id):
             device_id = NetworkID(device_id)
         assert device_id[0] != 0, 'getDeviceRangeInfo: device ID = 0'
+
         return self.useFunction(POZYX_DEVICE_GETRANGEINFO, device_id, device_range, remote_id)
 
     def getDeviceCir(self, list_offset, data_length, cir_buffer, remote_id=None):

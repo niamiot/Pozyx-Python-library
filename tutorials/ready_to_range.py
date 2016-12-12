@@ -59,7 +59,7 @@ if __name__ == "__main__":
     if not remote:
         remote_id = None
 
-    destination_id = 0x6830      # network ID of the ranging destination
+    destination_id = 0x685C      # network ID of the ranging destination
     range_step_mm = 1000         # distance that separates the amount of LEDs lighting up.
 
     pozyx = PozyxSerial(port)
