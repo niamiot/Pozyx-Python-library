@@ -227,7 +227,6 @@ class PozyxCore():
             return POZYX_FAILURE
         if len(data) > MAX_BUF_SIZE - 1:
             return POZYX_FAILURE
-
         send_data = Data([0, address] + data.data, 'BB' + data.data_format)
         status = self.regFunction(POZYX_TX_DATA, send_data, Data([]))
         if status == POZYX_FAILURE:
