@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 import time
 
 
+
+
 class Tag(object):
 
     def __init__(self, anchors_id=[]):
@@ -25,11 +27,18 @@ class Tag(object):
         self.port = get_serial_ports()[-1][0]
         self.p = PozyxSerial(self.port)
 
+        # 
+        s = SingleRegister(size=2)
+        self.p.getNetworkId(s)
+        self.tag_id=s.data[0]
+
         # check available anchors
         self.p.doDiscovery()
         list_size = SingleRegister()
         self.p.getDeviceListSize(list_size)
         device_list = DeviceList(list_size=list_size[0])
+        if len(device_list) ==0 :
+            raise AttributeError('No device discovered, please reboot anchors')
         self.p.getDeviceIds(device_list)
         if anchors_id == []:
             anchors_id = device_list.data
@@ -79,6 +88,8 @@ class Tag(object):
 
         s = s + '\n\n'
 
+        s = s + 'Tag ID:' + hex(self.tag_id)  + '\n\n'
+
         s = s + '{0:6s} | {1:4s} | {2:9s} | {3:1s}'.format(
             'Anchor', 'rng', 'rng status', 'cir status')
         s = s + '\n'
@@ -116,10 +127,13 @@ class Tag(object):
         if anchors_id == []:
             anchors_id = self.anchors.keys()
 
-        if do_ranging:
-            self.range(anchors_id)
+
 
         for a in anchors_id:
+            if do_ranging:
+                self.range(anchors_id=a)
+            # flush serial ( may help for avoiding blocking situations)
+            self.p.ser.flush()
             if self.anchors[a]['range_status']:
                 list_offset = range(0, 1015, 49)
                 data_length = 49
@@ -169,8 +183,56 @@ class Tag(object):
                     self.anchors[a]['ciradB'] = ciradb_recal
                     # poisiton leading edge
 
+
+    def agg_cir(self,anchors_id=[], time_step=1,total_time=10):
+        """
+            aggregated_CIR
+        """
+        if not isinstance(anchors_id, list):
+            anchors_id = [anchors_id]
+        if anchors_id == []:
+            anchors_id = self.anchors.keys()
+
+        
+        [self.anchors[i].update({'aggcir':[]})for i in anchors_id]
+        [self.anchors[i].update({'aggule':[]})for i in anchors_id]
+        [self.anchors[i].update({'aggrng':[]})for i in anchors_id]
+        nbpt = int(np.floor(((total_time/time_step))))
+
+        for k in xrange(nbpt):
+            print k/nbpt
+            self.get_cir(anchors_id)
+            for a in anchors_id:
+                self.anchors[a]['aggcir'].append(self.anchors[a]['raw_ciradB'])
+                self.anchors[a]['aggule'].append(self.anchors[a]['ule'])
+                self.anchors[a]['aggrng'].append(self.anchors[a]['range'].distance)
+            time.sleep(time_step)
+
+    def plotagg(self,anchors_id=[]):
+
+        if not isinstance(anchors_id, list):
+            anchors_id = [anchors_id]
+        if anchors_id == []:
+            anchors_id = self.anchors.keys()
+
+        for a in anchors_id:
+            udelay = np.array(self.anchors[a]['aggule'])
+            acir = np.array(self.anchors[a]['aggcir'])
+            acirr=np.zeros(acir.shape)
+            for k in range(len(udelay)):
+                acirr[k,:]=np.roll(acir[k,:],-udelay[k],axis=0)
+            plt.imshow(acirr[:,:400],aspect=10)
+
+
+
     def change_channel(self, channel=5):
         """ Change UWB channel
+
+        Parameters
+        ----------
+            Channel : int
+                channel number 
+
         # UWN_CHANNEL   Indicate the UWB channel. Possible values:
         # 1 : Centre frequency 3494.4MHz, using the band(MHz): 3244.8 – 3744, bandwidth 499.2 MHz 
         # 2 : Centre frequency 3993.6MHz, using the band(MHz): 3774 – 4243.2, bandwidth 499.2 MHz
@@ -179,6 +241,8 @@ class Tag(object):
         # 5 : Centre frequency 6489.6MHz, using the band(MHz): 6240 – 6739.2 bandwidth 499.2 MHz # (default)
         # 7 : Centre frequency 6489.6MHz, using the band(MHz): 5980.3 – 6998.9 bandwidth 1081.6 MHz (capped to 900MHz)
         """
+
+        
 
         if channel not in [1, 2, 3, 4, 5, 7]:
             raise AttributeError('Wrong Channel number (1,2,3,4,5,7)')
@@ -192,15 +256,14 @@ class Tag(object):
 
 
 
-        
+
         self.p.setUWBChannel(chan)
         self.p.getUWBChannel(verif)
 
         if verif.data[0] == channel:
-            print 'tag ' + ' is now on channel ' + str(channel)
+            print 'tag ' + hex(self.tag_id) + ' is now on channel ' + str(channel)
 
         # check
-
         for a in self.anchors:
             self.p.getUWBChannel(verif, remote_id=a)
             if verif.data[0] == channel:
@@ -210,7 +273,13 @@ class Tag(object):
         self.channel = channel
 
 
-    def plot(self, **kwargs):
+
+
+
+    def plot_cir(self, **kwargs):
+        '''
+        plot cir
+        '''
 
         defaults = {"fig": [],
                     "ax": []}
@@ -231,12 +300,13 @@ class Tag(object):
         for a in self.anchors:
             delay = self.anchors[a]['ule']
             plt.plot(self.anchors[a]['ciradB'][delay:], label=str(hex(a)))
+            # plt.plot(self.anchors[a]['raw_cira'], label=str(hex(a)))
         plt.legend()
         plt.show()
 
 
 T = Tag()
-T.change_channel(7)
+# T.change_channel(7)
 
 
 # T.get_cir()
