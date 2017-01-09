@@ -1,3 +1,11 @@
+# Fork update :
+- Create a Tag class in pyposyx library, to provide a convenient way to access to  channel impulse response, agregatted channel impulse response, change channel and plot 
+
+in tutorials :
+- add  test_UWBchannel : to change UWB channel
+- add get_CIR .py : preliminary work on The tag class
+
+
 # Pozyx-Python-library
 The unofficial release of the Python library (Beta version) to work with the pozyx indoor positioning system
 

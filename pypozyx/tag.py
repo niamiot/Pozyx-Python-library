@@ -306,8 +306,9 @@ class Tag(object):
 
 
 T = Tag()
-# T.change_channel(7)
+#T.get_cir()
+#T.change_channel(7)
 
 
-# T.get_cir()
+
 # T.plot()
